@@ -98,6 +98,11 @@ extern	UART_HandleTypeDef 	huart3;
 		#define SX126X_RESET_Pin					SX126x_RESET_Pin
 	#endif // #ifdef LORA_ENABLED
 #endif // #ifdef WIRELESS_ENABLED
+
+#define	ITCM_AREA_CODE		__attribute__((section(".RamITCMFunc"))) __attribute__ ((aligned (32)))
+#define DTCM_VECTORS_DATA	__attribute__((section(".dtcm_data")))   __attribute__ ((aligned (32)))
+
+
 #define	BOARD_NAME			"FY-201023-00"
 
 #endif /* BOARDS_FY_201023_00_H_ */

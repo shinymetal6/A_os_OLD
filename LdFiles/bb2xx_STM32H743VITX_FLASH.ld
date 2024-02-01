@@ -54,9 +54,31 @@ MEMORY
 /* Define output sections */
 SECTIONS
 {
-	.osMemPool  0x20000000 : {. = ALIGN(4); KEEP(*(.osMemPool))}
-	.osSegment  0x20008000 : {. = ALIGN(4); KEEP(*(.osSegment))}
-	.dmaSegment 0x38000000 : {. = ALIGN(4); KEEP(*(.osSegment))}
+	.osSysRam	  			0x20000000 : {. = ALIGN(4); KEEP(*(.osSysRam))}
+	
+	_mempool_start      = LOADADDR(.osMemPool);
+	.osMemPool  		0x20002000 : {. = ALIGN(4); KEEP(*(.osMemPool))}
+    _mempool_end        = LOADADDR(.osMemPoolEnd);
+	.osMemPoolEnd  		0x20008000 : {. = ALIGN(4); KEEP(*(.osMemPoolEnd))}
+	
+	_dmaNoCache_start   = LOADADDR(.dmaNoCache);
+	.dmaNoCache	        0x24070000 : {. = ALIGN(4); KEEP(*(.dmaNoCache))}
+	_dmaNoCache_end     = LOADADDR(.dmaNoCacheEnd);
+	.dmaNoCacheEnd      0x24080000 : {. = ALIGN(4); KEEP(*(.dmaNoCacheEnd))}
+	
+	_oscillators_start  = LOADADDR(.oscillators);
+	.oscillators	 	0x20010000 : {. = ALIGN(4); KEEP(*(.oscillators))}
+	_oscillators_end  	= LOADADDR(.audiobufs);
+	.audiobufs		 	0x20014000 : {. = ALIGN(4); KEEP(*(.audiobufs))}
+	
+	_d2ram_start      	= LOADADDR(.d2ram);
+	.d2ram		  		0x30000000 : {. = ALIGN(4); KEEP(*(.d2ram))}
+    _d2ram_end       	= LOADADDR(.d2ramEnd);
+	.d2ramEnd  			0x30048000 : {. = ALIGN(4); KEEP(*(.d2ramEnd))}
+	
+	
+	_fdata_start = LOADADDR(.isr_vector);
+  
   /* The startup code goes first into FLASH */
   .isr_vector :
   {
@@ -133,11 +155,45 @@ SECTIONS
     *(.data*)          /* .data* sections */
     *(.RamFunc)        /* .RamFunc sections */
     *(.RamFunc*)       /* .RamFunc* sections */
-
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
   } >RAM_D1 AT> FLASH
+  
+  _sid3_data = LOADADDR(.d3_data);
+  .d3_data :
+  {
+    . = ALIGN(4);
+    _sd3_data = .;        /* create a global symbol at data start */
+    *(.data)           /* .data sections */
+    *(.data*)          /* .data* sections */
+    *(.RamD3Func)        /* .RamFunc sections */
+    *(.RamD3Func*)       /* .RamFunc* sections */
+    . = ALIGN(4);
+    _ed3_data = .;        /* define a global symbol at data end */
+  } >RAM_D3 AT> FLASH
 
+  _siitcm_data = LOADADDR(.itcm_data);
+  .itcm_data :
+  {
+    . = ALIGN(4);
+    _sitcm_data = .;        /* create a global symbol at data start */
+    *(.data)           /* .data sections */
+    *(.data*)          /* .data* sections */
+    *(.RamITCMFunc)        /* .RamFunc sections */
+    *(.RamITCMFunc*)       /* .RamFunc* sections */
+    . = ALIGN(4);
+    _eitcm_data = .;        /* define a global symbol at data end */
+  } >ITCMRAM AT> FLASH
+  
+    _fdata_end = LOADADDR(.flash_end);
+  .flash_end :
+  {
+    . = ALIGN(4);
+    _sflash_end_start = .;        /* create a global symbol at data start */
+    . = ALIGN(4);
+    _eflash_end_start = .;        /* define a global symbol at data end */
+  } > FLASH
+  
   /* Uninitialized data section */
   . = ALIGN(4);
   .bss :
@@ -154,6 +210,21 @@ SECTIONS
     __bss_end__ = _ebss;
   } >RAM_D1
 
+  . = ALIGN(4);
+  .dtcmdata 0x20018000 :
+  {
+    /* This is used by the startup in order to initialize the .bss section */
+    _sdtcm = .;         /* define a global symbol at bss start */
+    __dtcm_start__ = _sdtcm;
+    *(.dtcm_data)
+    *(.dtcm_data*)
+    *(COMMON)
+
+    . = ALIGN(4);
+    _edtcm = .;         /* define a global symbol at bss end */
+    __dtcm_end__ = _edtcm;
+  } >DTCMRAM
+
   /* User_heap_stack section, used to check that there is enough RAM left */
   ._user_heap_stack :
   {
@@ -164,6 +235,8 @@ SECTIONS
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
   } >RAM_D1
+  
+
 
   /* Remove information from the standard libraries */
   /DISCARD/ :
@@ -175,5 +248,3 @@ SECTIONS
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
 }
-
-
