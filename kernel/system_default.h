@@ -429,7 +429,7 @@ extern	UART_HandleTypeDef 	huart2;
 #define IDLE_STACK_START         (SCHED_STACK_START - SIZE_SCHED_STACK)
 #define SIZE_IDLE_STACK          4096U
 #define	FIRST_PRC_STACK_START	 (IDLE_STACK_START - SIZE_IDLE_STACK)
-#define SYSTEM_RAM				__attribute__((section(".osSegment"))) __attribute__ ((aligned (32)))
+#define SYSTEM_RAM				__attribute__((section(".osSysRam"))) __attribute__ ((aligned (32)))
 #define	PendSV_PRIORITY			15
 #define	SysTick_PRIORITY		12
 #define	Exti0_PRIORITY			13

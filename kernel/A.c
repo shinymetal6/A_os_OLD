@@ -73,13 +73,6 @@ uint32_t *pPSP,i,j;
 	process[3].current_state = PROCESS_READY_STATE;
 	process[4].current_state = PROCESS_READY_STATE;
 
-	/*
-	process[0].psp_value = IDLE_STACK_START;
-	process[1].psp_value = P1_STACK_START;
-	process[2].psp_value = P2_STACK_START;
-	process[3].psp_value = P3_STACK_START;
-	process[4].psp_value = P4_STACK_START;
-	*/
 	process[0].psp_value = IDLE_STACK_START;
 	process[1].psp_value = FIRST_PRC_STACK_START;
 	process[2].psp_value = process[1].psp_value - UserProcesses[0].stack_size;
@@ -119,13 +112,13 @@ uint32_t ticks = (SYSTICK_TIM_CLK/tick_hz)-1;
 
 void A_init_mem(void)
 {
-	A_bzero((uint8_t *)&Asys,sizeof(Asys));
-	A_bzero((uint8_t *)&Semaphores,sizeof(Semaphores));
-	A_bzero((uint8_t *)HWMngr,sizeof(HWMngr));
-	A_bzero((uint8_t *)HwQueues,sizeof(HwQueues));
-	A_bzero((uint8_t *)process,sizeof(process));
-	A_bzero((uint8_t *)POOL_START,(uint32_t )POOL_SIZE);
-	A_bzero((uint8_t *)SRAM_START,(uint16_t )SRAM_SIZE);
+	bzero((uint8_t *)&Asys,sizeof(Asys));
+	bzero((uint8_t *)&Semaphores,sizeof(Semaphores));
+	bzero((uint8_t *)HWMngr,sizeof(HWMngr));
+	bzero((uint8_t *)HwQueues,sizeof(HwQueues));
+	bzero((uint8_t *)process,sizeof(process));
+	bzero((uint8_t *)POOL_START,(uint32_t )POOL_SIZE);
+	bzero((uint8_t *)SRAM_START,(uint16_t )SRAM_SIZE);
 }
 
 void A_enable_processor_faults(void)
@@ -133,20 +126,6 @@ void A_enable_processor_faults(void)
 	SCB->SHCSR |= SCB_SHCSR_MEMFAULTENA_Msk;
 	SCB->SHCSR |= SCB_SHCSR_BUSFAULTENA_Msk;
 	SCB->SHCSR |= SCB_SHCSR_USGFAULTENA_Msk;
-}
-
-void A_TimeDebug_High(void)
-{
-#if defined DEBUG_PIN_Pin
-	HAL_GPIO_WritePin(DEBUG_PIN_GPIO_Port, DEBUG_PIN_Pin,GPIO_PIN_SET);
-#endif
-}
-
-void A_TimeDebug_Low(void)
-{
-#if defined DEBUG_PIN_Pin
-	HAL_GPIO_WritePin(DEBUG_PIN_GPIO_Port, DEBUG_PIN_Pin,GPIO_PIN_RESET);
-#endif
 }
 
 void A_IrqPriority_Init(void)
@@ -231,18 +210,6 @@ void A_MPU_Config(void)
   HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
 }
 
-#ifdef ITCM_AREA_CODE
-void A_copy_flash_to_itcm(void)
-{
-extern	uint8_t __sitcm, __eitcm;
-extern	uint8_t	__flash_itcm;
-uint16_t itcm_text_size;
-
-	itcm_text_size = &__eitcm - &__sitcm;
-	A_memcpy(&__sitcm, &__flash_itcm, itcm_text_size);
-}
-#endif
-
 void A_start(void)
 {
 #if defined ETH_NRST_Pin
@@ -250,9 +217,7 @@ void A_start(void)
 #endif
 	A_PreOS_Init();
 	__disable_irq();
-#ifdef ITCM_AREA_CODE
-	A_copy_flash_to_itcm();
-#endif
+
 	DWT_Delay_Init();
 	A_Processor_Quirks();
 

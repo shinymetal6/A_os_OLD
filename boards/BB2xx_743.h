@@ -30,10 +30,7 @@
 #define SRAM_SIZE                65536
 
 /* I/O */
-	/*
-#define	DEBUG_GPIOPORT			PG6_Debug_GPIO_Port
-#define	DEBUG_GPIOBIT			PG6_Debug_Pin
-*/
+
 #define	LED_1_GPIOPORT			LED_GPIO_Port
 #define	LED_1_GPIOBIT			LED_Pin
 
@@ -44,8 +41,8 @@
 /* Others */
 #define	ASSIGNED				1
 
-extern	UART_HandleTypeDef 	huart3;
-#define	CONSOLE				huart3
+extern	UART_HandleTypeDef 	huart4;
+#define	CONSOLE				huart4
 
 #define	POWERSAVE_ENABLED		1
 #define	QSPI_ENABLED			1
@@ -59,21 +56,14 @@ extern	UART_HandleTypeDef 	huart3;
 #define	ADC_ENABLED				1
 #define	DAC_ENABLED				1
 #define	USB_ENABLED				1
-//#define	USE_ITCM				1
+#define	USE_ITCM				1
 #define	I2STX_PRIORITY			7
 #define	I2SRX_PRIORITY			7
-
-#ifdef USE_ITCM
-#define	ITCM_AREA_CODE	__attribute__((section(".itcm_text")))
-#else
-#define	ITCM_AREA_CODE
-#endif // #ifdef USB_ENABLED
 
 #ifdef USB_ENABLED
 	//#define	USB_CDC				1
 	#define	USB_MIDI			1
 #endif // #ifdef USB_ENABLED
-
 
 #ifdef QSPI_ENABLED
 	#define	QSPI_WINBOND			1
@@ -140,9 +130,12 @@ extern	UART_HandleTypeDef 	huart3;
 	#endif // #ifdef CODEC_NAU88C22
 #endif // #ifdef CODEC_ENABLED
 
-#define DMA_NOCACHE_RAM		__attribute__((section(".dmaNoCacheSegment")))   __attribute__ ((aligned (32)))
-#define OSCILLATORS_RAM		__attribute__((section(".oscillators_Segment"))) __attribute__ ((aligned (32)))
-#define AUDIOBUFS_RAM		__attribute__((section(".audiobufs_Segment")))   __attribute__ ((aligned (32)))
+
+#define DMA_NOCACHE_RAM		__attribute__((section(".dmaNoCache")))   __attribute__ ((aligned (32)))
+#define OSCILLATORS_RAM		__attribute__((section(".oscillators"))) __attribute__ ((aligned (32)))
+#define AUDIOBUFS_RAM		__attribute__((section(".audiobufs")))   __attribute__ ((aligned (32)))
+#define	ITCM_AREA_CODE		__attribute__((section(".RamITCMFunc"))) __attribute__ ((aligned (32)))
+#define DTCM_VECTORS_DATA	__attribute__((section(".dtcm_data")))   __attribute__ ((aligned (32)))
 
 #define	BOARD_NAME			"BB2xx_743"
 #define	MACHINE_NAME		"BB201_VCO"
