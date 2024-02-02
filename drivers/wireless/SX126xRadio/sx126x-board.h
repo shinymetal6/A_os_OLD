@@ -17,7 +17,7 @@ Maintainer: Miguel Luis and Gregory Cristian
 #define __SX126x_ARCH_H__
 
 #include "sx126x.h"
-#include "../../kernel/system_default.h"
+#include "../../../kernel/system_default.h"
 
 /*!
  * \brief Initializes the radio I/Os pins interface

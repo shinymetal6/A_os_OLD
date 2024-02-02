@@ -278,7 +278,7 @@ extern	uint32_t remove_from_waiting_semaphore(uint8_t semaphore_id);
 #define	WAKEUP_FLAGS_HW_USB_RX_COMPLETE		0x80000000
 
 #ifdef WIRELESS_NRF24L01
-#include "../drivers/wireless/nrf24l01.h"
+#include "../drivers/wireless/nrf24l01/nrf24l01.h"
 #endif
 #ifdef CODEC_ENABLED
 	#include "audio.h"
