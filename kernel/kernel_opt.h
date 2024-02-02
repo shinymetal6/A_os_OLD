@@ -23,6 +23,6 @@
 #ifndef KERNEL_KERNEL_OPT_H_
 #define KERNEL_KERNEL_OPT_H_
 
-#pragma GCC optimize("Ofast")
+//#pragma GCC optimize("Ofast")
 
 #endif /* KERNEL_KERNEL_OPT_H_ */

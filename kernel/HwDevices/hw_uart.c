@@ -28,6 +28,8 @@
 #include "../hwmanager.h"
 #include "../system_default.h"
 
+#define	NO_SENTINEL	0
+
 #ifdef CONSOLE
 extern	HWMngr_t		HWMngr[PERIPHERAL_NUM];
 extern	Asys_t			Asys;
@@ -37,29 +39,18 @@ uint8_t	rx_char;
 
 uint32_t hw_send_uart(uint32_t uart,uint8_t *ptr,uint16_t len)
 {
-
 #ifdef CONSOLE
-#ifdef	USE_QUEUES
-	if ( HWMngr[uart].process == Asys.current_process )
-	{
-		if ( (queue_insert(&HwQueues[uart],ptr,len) & HW_MNGR_QUEUE_WAS_EMPTY ) == HW_MNGR_QUEUE_WAS_EMPTY )
-		{
-			return  HAL_UART_Transmit_IT(&CONSOLE, ptr, len);
-		}
-	}
-#else
 	return  HAL_UART_Transmit_IT(&CONSOLE, ptr, len);
-#endif
 #endif
 	return 255;
 }
 
-
-uint32_t hw_receive_uart(uint32_t uart,uint8_t *rx_buf,uint16_t rx_buf_max_len,uint8_t timeout)
+uint32_t hw_receive_uart(uint32_t uart,uint8_t *rx_buf,uint16_t rx_buf_max_len,uint16_t timeout)
 {
-#ifdef CONSOLE
 	if ( HWMngr[uart].process == Asys.current_process )
 	{
+		HWMngr[uart].sentinel_start = HWMngr[uart].sentinel_end = NO_SENTINEL;
+		HWMngr[uart].status |= HWMAN_SENTINEL_FOUND;
 		HWMngr[uart].rx_buf = rx_buf;
 		HWMngr[uart].rx_buf_max_len = rx_buf_max_len;
 		if ( timeout )
@@ -71,172 +62,120 @@ uint32_t hw_receive_uart(uint32_t uart,uint8_t *rx_buf,uint16_t rx_buf_max_len,u
 		HAL_UART_Receive_IT(&CONSOLE, &rx_char, 1);
 		return 0;
 	}
-#endif
+	return 255;
+}
+
+uint32_t hw_receive_uart_sentinel(uint32_t uart,uint8_t *rx_buf,uint16_t rx_buf_max_len,uint8_t sentinel_start, uint8_t sentinel_end,uint16_t timeout)
+{
+	if ( HWMngr[uart].process == Asys.current_process )
+	{
+		HWMngr[uart].sentinel_start = sentinel_start;
+		HWMngr[uart].sentinel_end = sentinel_end;
+		HWMngr[uart].status &= ~HWMAN_SENTINEL_FOUND;
+
+		HWMngr[uart].rx_buf = rx_buf;
+		HWMngr[uart].rx_buf_max_len = rx_buf_max_len;
+		if ( timeout )
+		{
+			HWMngr[uart].timeout = HWMngr[uart].timeout_reload_value = timeout;
+			HWMngr[uart].flags |= HWMAN_TIMEOUT_ENABLED;
+		}
+		HWMngr[uart].rx_buf_index = 0;
+		HAL_UART_Receive_IT(&CONSOLE, &rx_char, 1);
+		return 0;
+	}
+	return 255;
+}
+
+uint32_t hw_receive_uart_sentinel_clear(uint32_t uart)
+{
+	if ( HWMngr[uart].process == Asys.current_process )
+	{
+		HWMngr[uart].sentinel_start = HWMngr[uart].sentinel_end = NO_SENTINEL;
+		return 0;
+	}
 	return 255;
 }
 
 uint16_t hw_get_uart_receive_len(uint32_t uart)
 {
-#ifdef CONSOLE
-	if ( HWMngr[uart].status == HWMAN_STATUS_ALLOCATED)
+	if (( HWMngr[uart].status & HWMAN_STATUS_ALLOCATED) == HWMAN_STATUS_ALLOCATED)
 		if ( HWMngr[uart].process == Asys.current_process )
 			return HWMngr[uart].rxlen;
 	return 0;
-#endif
-	return 0;
 }
 
-#ifdef CONSOLE
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-#ifdef	USE_QUEUES
-uint8_t		numbuf,*ptr;
-uint16_t 	len;
-	if ( HWMngr[HW_UART1].status == HWMAN_STATUS_ALLOCATED)
-	{
-		ptr = queue_extract(&HwQueues[HW_UART1], &numbuf, &len);
-		if (  numbuf )
-		{
-			HAL_UART_Transmit_IT(&CONSOLE, ptr, len);
-		}
-	}
-	if ( HWMngr[HW_UART2].status == HWMAN_STATUS_ALLOCATED)
-	{
-		ptr = queue_extract(&HwQueues[HW_UART2], &numbuf, &len);
-		if (  numbuf )
-		{
-			HAL_UART_Transmit_IT(&CONSOLE, ptr, len);
-		}
-	}
-	if ( HWMngr[HW_UART3].status == HWMAN_STATUS_ALLOCATED)
-	{
-		ptr = queue_extract(&HwQueues[HW_UART3], &numbuf, &len);
-		if (  numbuf )
-		{
-			HAL_UART_Transmit_IT(&CONSOLE, ptr, len);
-		}
-	}
-#else
-#endif
+
 }
 
 uint8_t trxbuf[32],t_index=0;
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
+uint32_t	i;
+	__disable_irq();
 	trxbuf[t_index] = rx_char;
 	t_index++;
 	t_index &= 0x1f;
-
-	if ( HWMngr[HW_UART1].status == HWMAN_STATUS_ALLOCATED)
+	for(i=HW_UART1;i<HW_UART4;i++)
 	{
-		if ( HWMngr[HW_UART1].rx_buf != NULL )
+		if (( HWMngr[i].status & HWMAN_STATUS_ALLOCATED) == HWMAN_STATUS_ALLOCATED)
 		{
-			HWMngr[HW_UART1].rx_buf[HWMngr[HW_UART1].rx_buf_index] = rx_char;
-			HWMngr[HW_UART1].rx_buf_index++;
-			if ( HWMngr[HW_UART1].rx_buf_index == HWMngr[HW_UART1].rx_buf_max_len)
+			if ( HWMngr[i].rx_buf != NULL )
 			{
-				HWMngr[HW_UART1].rxlen = HWMngr[HW_UART1].rx_buf_index;
-				HWMngr[HW_UART1].rx_buf_index = 0;
-				activate_process(HWMngr[HW_UART1].process,WAKEUP_FROM_UART1_IRQ,WAKEUP_FLAGS_UART);
+				if (( HWMngr[i].status & HWMAN_SENTINEL_FOUND) == 0)
+				{
+					if (( HWMngr[i].sentinel_start != 0) && (HWMngr[i].sentinel_end != 0))
+					{
+						if (( rx_char >= HWMngr[i].sentinel_start) && (rx_char <= HWMngr[i].sentinel_end ))
+						{
+							HWMngr[i].status |= HWMAN_SENTINEL_FOUND;
+						}
+					}
+				}
+				if (( HWMngr[i].status & HWMAN_SENTINEL_FOUND) == HWMAN_SENTINEL_FOUND)
+				{
+					HWMngr[i].rx_buf[HWMngr[i].rx_buf_index] = rx_char;
+					HWMngr[i].timeout = HWMngr[HW_UART3].timeout_reload_value;
+					HWMngr[i].rx_buf_index++;
+					if ( HWMngr[i].rx_buf_index == HWMngr[i].rx_buf_max_len)
+					{
+						HWMngr[i].rxlen = HWMngr[i].rx_buf_index;
+						HWMngr[i].rx_buf_index = 0;
+						activate_process(HWMngr[i].process,1<<i,WAKEUP_FLAGS_UART);
+					}
+				}
 			}
 		}
 	}
-	if ( HWMngr[HW_UART2].status == HWMAN_STATUS_ALLOCATED)
-	{
-		if ( HWMngr[HW_UART2].rx_buf != NULL )
-		{
-			HWMngr[HW_UART2].rx_buf[HWMngr[HW_UART2].rx_buf_index] = rx_char;
-			HWMngr[HW_UART2].rx_buf_index++;
-			if ( HWMngr[HW_UART2].rx_buf_index == HWMngr[HW_UART2].rx_buf_max_len)
-			{
-				HWMngr[HW_UART2].rxlen = HWMngr[HW_UART2].rx_buf_index;
-				HWMngr[HW_UART2].rx_buf_index = 0;
-				activate_process(HWMngr[HW_UART2].process,WAKEUP_FROM_UART2_IRQ,WAKEUP_FLAGS_UART);
-			}
-		}
-	}
-	if ( HWMngr[HW_UART3].status == HWMAN_STATUS_ALLOCATED)
-	{
-		if ( HWMngr[HW_UART3].rx_buf != NULL )
-		{
-			HWMngr[HW_UART3].rx_buf[HWMngr[HW_UART3].rx_buf_index] = rx_char;
-			HWMngr[HW_UART3].rx_buf_index++;
-			if ( HWMngr[HW_UART3].rx_buf_index == HWMngr[HW_UART3].rx_buf_max_len)
-			{
-				HWMngr[HW_UART3].rxlen = HWMngr[HW_UART3].rx_buf_index;
-				HWMngr[HW_UART3].rx_buf_index = 0;
-				activate_process(HWMngr[HW_UART3].process,WAKEUP_FROM_UART3_IRQ,WAKEUP_FLAGS_UART);
-			}
-		}
-	}
-	HAL_UART_Receive_IT(&CONSOLE, &rx_char, 1);
+	HAL_UART_Receive_IT(huart, &rx_char, 1);
+	__enable_irq();
 }
 
 void HAL_UART_RxTimeoutCheckCallback(void)
 {
-	if ( HWMngr[HW_UART1].status == HWMAN_STATUS_ALLOCATED)
+uint32_t	i;
+	for(i=HW_UART1;i<HW_UART3+1;i++)
 	{
-		if ( HWMngr[HW_UART1].rx_buf != NULL )
+		if (( HWMngr[i].status & HWMAN_STATUS_ALLOCATED) == HWMAN_STATUS_ALLOCATED)
 		{
-			if ( HWMngr[HW_UART1].rx_buf_index != 0 )
+			if ( HWMngr[i].rx_buf != NULL )
 			{
-				if (( HWMngr[HW_UART1].flags & HWMAN_TIMEOUT_ENABLED) == HWMAN_TIMEOUT_ENABLED)
+				if ( HWMngr[i].rx_buf_index != 0 )
 				{
-					if ( HWMngr[HW_UART1].timeout )
+					if (( HWMngr[i].flags & HWMAN_TIMEOUT_ENABLED) == HWMAN_TIMEOUT_ENABLED)
 					{
-						HWMngr[HW_UART1].timeout --;
-						if ( HWMngr[HW_UART1].timeout == 0 )
+						if ( HWMngr[i].timeout )
 						{
-							HWMngr[HW_UART1].timeout = HWMngr[HW_UART1].timeout_reload_value;
-							HWMngr[HW_UART1].rxlen = HWMngr[HW_UART1].rx_buf_index;
-							HWMngr[HW_UART1].rx_buf_index = 0;
-							activate_process(HWMngr[HW_UART1].process,WAKEUP_FROM_UART1_IRQ,WAKEUP_FLAGS_UART);
-						}
-					}
-				}
-			}
-		}
-	}
-	if ( HWMngr[HW_UART2].status == HWMAN_STATUS_ALLOCATED)
-	{
-		if ( HWMngr[HW_UART2].rx_buf != NULL )
-		{
-			if ( HWMngr[HW_UART2].rx_buf_index != 0 )
-			{
-				if (( HWMngr[HW_UART2].flags & HWMAN_TIMEOUT_ENABLED) == HWMAN_TIMEOUT_ENABLED)
-				{
-					if ( HWMngr[HW_UART2].timeout )
-					{
-						HWMngr[HW_UART2].timeout --;
-						if ( HWMngr[HW_UART2].timeout == 0 )
-						{
-							HWMngr[HW_UART2].timeout = HWMngr[HW_UART2].timeout_reload_value;
-							HWMngr[HW_UART2].rxlen = HWMngr[HW_UART2].rx_buf_index;
-							HWMngr[HW_UART2].rx_buf_index = 0;
-							activate_process(HWMngr[HW_UART2].process,WAKEUP_FROM_UART2_IRQ,WAKEUP_FLAGS_UART);
-						}
-					}
-				}
-			}
-		}
-	}
-	if ( HWMngr[HW_UART3].status == HWMAN_STATUS_ALLOCATED)
-	{
-		if ( HWMngr[HW_UART3].rx_buf != NULL )
-		{
-			if ( HWMngr[HW_UART3].rx_buf_index != 0 )
-			{
-				if (( HWMngr[HW_UART3].flags & HWMAN_TIMEOUT_ENABLED) == HWMAN_TIMEOUT_ENABLED)
-				{
-					if ( HWMngr[HW_UART3].timeout )
-					{
-						HWMngr[HW_UART3].timeout --;
-						if ( HWMngr[HW_UART3].timeout == 0 )
-						{
-							HWMngr[HW_UART3].timeout = HWMngr[HW_UART3].timeout_reload_value;
-							HWMngr[HW_UART3].rxlen = HWMngr[HW_UART3].rx_buf_index;
-							HWMngr[HW_UART3].rx_buf_index = 0;
-							activate_process(HWMngr[HW_UART3].process,WAKEUP_FROM_UART3_IRQ,WAKEUP_FLAGS_UART);
+							HWMngr[i].timeout --;
+							if ( HWMngr[i].timeout == 0 )
+							{
+								HWMngr[i].timeout = HWMngr[HW_UART3].timeout_reload_value;
+								HWMngr[i].rxlen = HWMngr[HW_UART3].rx_buf_index;
+								HWMngr[i].rx_buf_index = 0;
+								activate_process(HWMngr[i].process,1<<i,WAKEUP_FLAGS_UART_TO | WAKEUP_FLAGS_UART);
+							}
 						}
 					}
 				}
@@ -244,5 +183,3 @@ void HAL_UART_RxTimeoutCheckCallback(void)
 		}
 	}
 }
-
-#endif

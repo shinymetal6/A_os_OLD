@@ -35,7 +35,6 @@ SYSTEM_RAM		IrqMngr_t		IrqMngr[PERIPHERAL_NUM];
 SYSTEM_RAM		HWMngr_queue_t	HwQueues[PERIPHERAL_NUM];
 SYSTEM_RAM		Semaphores_t	Semaphores;
 
-//
 extern	USRprcs_t	UserProcesses[USR_PROCESS_NUMBER];
 
 A_IpAddr_t	A_IpAddr =
@@ -130,8 +129,10 @@ void A_enable_processor_faults(void)
 
 void A_IrqPriority_Init(void)
 {
+	//The lower the number, the higher the priority,
 	HAL_NVIC_SetPriority(PendSV_IRQn,  PendSV_PRIORITY, 0);		/* Make PendSV_IRQn lower priority */
 	HAL_NVIC_SetPriority(SysTick_IRQn, SysTick_PRIORITY, 0);	/* Make SysTick_IRQn higher priority than PendSV_IRQn */
+	HAL_NVIC_SetPriority(USART3_IRQn,  SysTick_PRIORITY+1, 0);	/* Make USART3_IRQn  lower priority than SysTick_IRQn */
 
 #ifdef ENCODER_ENABLED
 	HAL_NVIC_SetPriority(EXTI0_IRQn, Exti0_PRIORITY, 0);		/* Make EXTI0_IRQn higher priority than SysTick_IRQn and lower than PendSV_IRQn */

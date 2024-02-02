@@ -104,17 +104,21 @@ __attribute__((naked)) void PendSV_Handler(void)
 	__asm volatile("BX LR");
 }
 
-uint32_t __attribute__ ((noinline)) wait_event(uint32_t events)
+/* uint32_t */ void __attribute__ ((noinline)) wait_event(uint32_t events)
 {
 uint32_t wake;
 	__disable_irq();
 	process[Asys.current_process].wait_event = events;
 	process[Asys.current_process].current_state &= ~PROCESS_READY_STATE;
 	schedule();
+	/*
 	wake = process[Asys.current_process].wakeup_rsn;
 	process[Asys.current_process].wakeup_rsn = 0;
+	*/
 	__enable_irq();
+	/*
 	return wake;
+	*/
 }
 
 void __attribute__ ((noinline)) suspend(void)
@@ -139,12 +143,34 @@ uint32_t inline activate_process(uint8_t dest_process,uint32_t rsn , uint32_t fl
 	return 0;
 }
 
+uint32_t get_wakeup_rsn(void)
+{
+uint32_t wakeup_rsn;
+	__disable_irq();
+	wakeup_rsn = process[Asys.current_process].wakeup_rsn;
+	process[Asys.current_process].wakeup_rsn = 0;
+	__enable_irq();
+	return wakeup_rsn;
+}
+
 uint32_t get_activation_flags(void)
 {
 uint32_t activation_flag;
+	__disable_irq();
 	activation_flag = process[Asys.current_process].wakeup_flags;
 	process[Asys.current_process].wakeup_flags = 0;
+	__enable_irq();
 	return activation_flag;
+}
+
+uint32_t get_wakeup_flags(uint32_t *reason, uint32_t *flags )
+{
+	__disable_irq();
+	*reason = process[Asys.current_process].wakeup_rsn;
+	*flags = process[Asys.current_process].wakeup_flags;
+	process[Asys.current_process].wakeup_rsn = process[Asys.current_process].wakeup_flags = 0;
+	__enable_irq();
+	return 0;
 }
 
 uint8_t get_current_process(void)

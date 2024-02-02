@@ -24,9 +24,13 @@
 #define KERNEL_A_EXPORTED_FUNCTIONS_H_
 
 /* System */
-extern	uint32_t wait_event(uint32_t events);
+extern	/* uint32_t */ void wait_event(uint32_t events);
+
 extern	uint8_t get_current_process(void);
 extern	uint32_t get_activation_flags(void);
+extern	uint32_t get_wakeup_rsn(void);
+extern	uint32_t get_wakeup_flags(uint32_t *reason, uint32_t *flags );
+
 extern	void A_TimeDebug_High(void);
 extern	void A_TimeDebug_Low(void);
 
@@ -87,58 +91,34 @@ extern	uint32_t hw_send_usb(uint8_t* ptr, uint16_t len);
 
 /* hwmanager : uart */
 extern	uint32_t hw_send_uart(uint32_t uart,uint8_t *ptr,uint16_t len);
-extern	uint32_t hw_receive_uart(uint32_t uart,uint8_t *rx_buf,uint16_t rx_buf_max_len,uint8_t timeout);
+extern	uint32_t hw_receive_uart(uint32_t uart,uint8_t *rx_buf,uint16_t rx_buf_max_len,uint16_t timeout);
+extern	uint32_t hw_receive_uart_sentinel(uint32_t uart,uint8_t *rx_buf,uint16_t rx_buf_max_len,uint8_t sentinel_start, uint8_t sentinel_end,uint16_t timeout);
+extern	uint32_t hw_receive_uart_sentinel_clear(uint32_t uart);
+
 extern	void HAL_UART_RxTimeoutCheckCallback(void);
 extern	uint16_t hw_get_uart_receive_len(uint32_t uart);
 
 /* support functions */
 extern	uint32_t A_bit_index_to_num(uint32_t bit_index );
-extern	void A_bzero(uint8_t *ptr,uint16_t count);
-extern	void A_memcpy(uint8_t *dest,uint8_t *source,uint16_t size);
-extern	void A_bmemcpy(uint8_t *dest,uint8_t *source,uint16_t size);
+
+
 
 /* audio */
 extern	uint32_t *InitAudioBuffers(void);
 extern	uint8_t StartAudioBuffers(int16_t* audio_in_buffer,int16_t* audio_out_buffer);
 
+/* xmodem */
+extern	uint8_t xmodem_receive(uint8_t *buf , uint16_t len);
+
 
 /* svc ops */
 extern	int32_t call_svc(int8_t svc_index,int32_t param1 , int32_t param2 , int32_t param3);
 
-/* semaphores */
-extern	uint32_t get_semaphore(uint8_t semaphore_id,uint8_t semaphore_flag,uint32_t semaphore_timeout);
-extern	uint32_t destroy_semaphore(uint8_t semaphore_id);
-extern	uint32_t remove_from_waiting_semaphore(uint8_t semaphore_id);
-
-#define	SEMAPHORE_ID_0				0
-#define	SEMAPHORE_ID_1				1
-#define	SEMAPHORE_ID_2				2
-#define	SEMAPHORE_ID_3				3
-#define	SEMAPHORE_ID_4				4
-#define	SEMAPHORE_ID_5				5
-#define	SEMAPHORE_ID_6				6
-#define	SEMAPHORE_ID_7				7
-/* semaphore_timeout */
-#define	SEMAPHORE_WAIT_FOREVER		0x00
-/* semaphore_flag */
-#define	SEMAPHORE_NO_SUSPEND		0x00
-#define	SEMAPHORE_SUSPEND_IF_RED	0x01
-/* semaphore returns */
-#define	SEMAPHORE_FREE				0x00
-#define	SEMAPHORE_GREEN				0x00
-#define	SEMAPHORE_RED				0x01
-#define	SEMAPHORE_TIMEOUT			0x02
-#define	SEMAPHORE_OTHER_EVENT		0x20000000
-#define	SEMAPHORE_ALREADY_SET		0x40000000
-#define	SEMAPHORE_UNAVAILABLE		0x80000000
-#define	SEMAPHORE_ERRORS_MASK		0xF0000000
 
 /* peripherals , maximum index is 27 , bit 28 to 31 are for anomalies on the semaphores ( actually used 3 ) */
 #define	HW_DELAY					0
 #define	HW_TIMER					1
 #define	HW_MBX						2
-#define	HW_SEMAPHORE				3
-#define	HW_SEMAPHORE_TIMEOUT		4
 #define	HW_UART1					5
 #define	HW_UART2					6
 #define	HW_UART3					7
@@ -163,8 +143,6 @@ extern	uint32_t remove_from_waiting_semaphore(uint8_t semaphore_id);
 #define	EVENT_DELAY						(1<<HW_DELAY)
 #define	EVENT_TIMER						(1<<HW_TIMER)
 #define	EVENT_MBX						(1<<HW_MBX)
-#define	EVENT_SEMAPHORE					(1<<HW_SEMAPHORE)
-#define	EVENT_SEMAPHORE_TIMEOUT			(1<<HW_SEMAPHORE_TIMEOUT)
 #define	EVENT_UART1_IRQ					(1<<HW_UART1)
 #define	EVENT_UART2_IRQ					(1<<HW_UART2)
 #define	EVENT_UART3_IRQ					(1<<HW_UART3)
@@ -188,8 +166,6 @@ extern	uint32_t remove_from_waiting_semaphore(uint8_t semaphore_id);
 #define	SUSPEND_ON_DELAY				EVENT_DELAY
 #define	SUSPEND_ON_TIMER				EVENT_TIMER
 #define	SUSPEND_ON_MBX					EVENT_MBX
-#define	SUSPEND_ON_SEMAPHORE			EVENT_SEMAPHORE
-#define	SUSPEND_ON_SEMAPHORE_TIMEOUT	EVENT_SEMAPHORE_TIMEOUT
 #define	SUSPEND_ON_UART1_IRQ			EVENT_UART1_IRQ
 #define	SUSPEND_ON_UART2_IRQ			EVENT_UART2_IRQ
 #define	SUSPEND_ON_UART3_IRQ			EVENT_UART3_IRQ
@@ -213,8 +189,6 @@ extern	uint32_t remove_from_waiting_semaphore(uint8_t semaphore_id);
 #define	WAKEUP_FROM_DELAY				SUSPEND_ON_DELAY
 #define	WAKEUP_FROM_TIMER				SUSPEND_ON_TIMER
 #define	WAKEUP_FROM_MBX					SUSPEND_ON_MBX
-#define	WAKEUP_FROM_SEMAPHORE			SUSPEND_ON_SEMAPHORE
-#define	WAKEUP_FROM_SEMAPHORE_TIMEOUT	SUSPEND_ON_SEMAPHORE
 #define	WAKEUP_FROM_UART1_IRQ			SUSPEND_ON_UART1_IRQ
 #define	WAKEUP_FROM_UART2_IRQ			SUSPEND_ON_UART2_IRQ
 #define	WAKEUP_FROM_UART3_IRQ			SUSPEND_ON_UART3_IRQ
@@ -238,8 +212,6 @@ extern	uint32_t remove_from_waiting_semaphore(uint8_t semaphore_id);
 #define	DEVICE_DELAY					HW_DELAY
 #define	DEVICE_TIMER					HW_TIMER
 #define	DEVICE_MBX						HW_MBX
-#define	DEVICE_SEMAPHORE				HW_SEMAPHORE
-#define	DEVICE_SEMAPHORE_TIMEOUT		HW_SEMAPHORE_TIMEOUT
 #define	DEVICE_UART1					HW_UART1
 #define	DEVICE_UART2					HW_UART2
 #define	DEVICE_UART3					HW_UART3
@@ -270,10 +242,11 @@ extern	uint32_t remove_from_waiting_semaphore(uint8_t semaphore_id);
 #define	WAKEUP_FLAGS_TIM_ID6				0x00000040
 #define	WAKEUP_FLAGS_TIM_ID7				0x00000080
 #define	WAKEUP_FLAGS_UART					0x00000100
-#define	WAKEUP_FLAGS_EXTI_D0				0x00000200
-#define	WAKEUP_FLAGS_EXTI_D1				0x00000400
-#define	WAKEUP_FLAGS_EXTI					0x00000800
-#define	WAKEUP_FLAGS_SEMAPHORE				0x20000000
+#define	WAKEUP_FLAGS_UART_TO				0x00000200
+#define	WAKEUP_FLAGS_EXTI_D0				0x00000400
+#define	WAKEUP_FLAGS_EXTI_D1				0x00000800
+#define	WAKEUP_FLAGS_EXTI					0x00001000
+#define	WAKEUP_FLAGS_TEST					0x10000000
 #define	WAKEUP_FLAGS_MBX					0x40000000
 #define	WAKEUP_FLAGS_HW_USB_RX_COMPLETE		0x80000000
 

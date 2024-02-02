@@ -57,6 +57,8 @@ typedef struct
 	uint8_t		status;
 	uint16_t	rxlen;
 	uint32_t	flags;
+	uint8_t		sentinel_start;
+	uint8_t		sentinel_end;
 	uint8_t		*rx_buf;
 	uint16_t	rx_buf_index;
 	uint16_t	rx_buf_max_len;
@@ -69,6 +71,7 @@ typedef struct
 
 #define	HWMAN_STATUS_FREE		0x00
 #define	HWMAN_STATUS_ALLOCATED	0x01
+#define	HWMAN_SENTINEL_FOUND	0x02
 #define	HWMAN_SINGLE_IRQ		0x80
 #define	HWMAN_STD_IRQ			0x00
 

@@ -34,6 +34,8 @@
 #define	DEBUG_GPIOBIT			PG6_Debug_Pin
 #define	LED_1_GPIOPORT			LD1_GPIO_Port
 #define	LED_1_GPIOBIT			LD1_Pin
+#define	LED_2_GPIOPORT			LD2_GPIO_Port
+#define	LED_2_GPIOBIT			LD2_Pin
 #define	LED_3_GPIOPORT			LD3_GPIO_Port
 #define	LED_3_GPIOBIT			LD3_Pin
 #define	BUTTON_GPIOPORT			B1_GPIO_Port
@@ -52,7 +54,7 @@
 extern	UART_HandleTypeDef 	huart3;
 #define	CONSOLE				huart3
 
-#define	ST_NFC_ENABLED
+//#define	ST_NFC_ENABLED
 #ifdef	ST_NFC_ENABLED
 
 	extern	SPI_HandleTypeDef		hspi1;
@@ -80,6 +82,14 @@ extern	UART_HandleTypeDef 	huart3;
 	#define ST25R_INT_PORT           ST25R391X_INT_GPIO_Port      /*!< GPIO port used for ST25R External Interrupt   */
 
 #endif
+
+	/*
+#define DMA_NOCACHE_RAM		__attribute__((section(".dmaNoCache")))   __attribute__ ((aligned (32)))
+#define OSCILLATORS_RAM		__attribute__((section(".oscillators"))) __attribute__ ((aligned (32)))
+#define AUDIOBUFS_RAM		__attribute__((section(".audiobufs")))   __attribute__ ((aligned (32)))
+*/
+#define	ITCM_AREA_CODE		__attribute__((section(".RamITCMFunc"))) __attribute__ ((aligned (32)))
+#define DTCM_VECTORS_DATA	__attribute__((section(".dtcm_data")))   __attribute__ ((aligned (32)))
 
 #define	BOARD_NAME			"STM32H743ZI2_NUCLEO"
 

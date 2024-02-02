@@ -34,10 +34,12 @@ extern	__IO uint32_t uwTick;
 
 void update_global_tick_count(void)
 {
+	__disable_irq();
 	Asys.g_tick_count++;
 	// update the HAL timer, if someone need it
 	uwTick++;
 	HAL_UART_RxTimeoutCheckCallback();
+	__enable_irq();
 }
 
 int32_t A_GetTick(void)
@@ -66,6 +68,12 @@ void task_delay(uint32_t tick_count)
 	__enable_irq();
 }
 
+#define	DEBUG_OS
+#ifdef DEBUG_OS
+
+uint32_t 	last_woken_prc , last_tim_val , last_tim_id , last_gcount;
+
+#endif
 void check_timers(void)
 {
 register uint8_t	i,j;
@@ -88,6 +96,12 @@ register uint8_t	i,j;
 					{
 						if(Asys.g_tick_count >= process[i].current_timer[j] )
 						{
+#ifdef DEBUG_OS
+							last_woken_prc = i;
+							last_tim_val = process[i].current_timer[j];
+							last_tim_id = j;
+							last_gcount = Asys.g_tick_count;
+#endif
 							process[i].current_state |= PROCESS_READY_STATE;
 							if ((process[i].timer_flags[j] & TIMERFLAGS_FOREVER ) == TIMERFLAGS_FOREVER)
 								process[i].current_timer[j] = Asys.g_tick_count + process[i].timer_value[j];
@@ -105,16 +119,17 @@ register uint8_t	i,j;
 
 void  SysTick_Handler(void)
 {
+	__disable_irq();
 	if ( Asys.g_os_started )
 	{
 		update_global_tick_count();
 		check_timers();
-		check_semaphores();
 		//pend the pendsv exception
-		SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+		schedule();
 	}
 	else
 		HAL_IncTick();
+	__enable_irq();
 }
 
 uint32_t create_timer(uint8_t timer_id,uint32_t tick_count,uint8_t flags)
