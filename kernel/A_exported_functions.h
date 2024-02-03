@@ -108,7 +108,7 @@ extern	uint32_t *InitAudioBuffers(void);
 extern	uint8_t StartAudioBuffers(int16_t* audio_in_buffer,int16_t* audio_out_buffer);
 
 /* xmodem */
-extern	uint8_t xmodem_receive(uint8_t *buf , uint16_t len);
+extern	uint8_t xmodem_line_parser(uint8_t *buf);
 
 
 /* svc ops */

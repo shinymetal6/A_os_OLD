@@ -22,16 +22,43 @@
 
 #include "main.h"
 #include "xmodem.h"
+#include <string.h>
 
 uint8_t 	xmodem_sm;
 xmodem_t	xmodem_struct;
 uint8_t		xmodem_line[1024];
 
-uint8_t xmodem_receive(uint8_t *buf , uint16_t len)
+static uint8_t xmodem_calc_csum(uint8_t *buf)
 {
-	xmodem_struct.data_len = len;
+uint16_t	calc_csum=0,i;
+	for(i=0;i<XMODEM_LEN;i++)
+		calc_csum += buf[i+3];
+	return ( calc_csum & 0xff ) - buf[XMODEM_LEN+3];
+}
+
+static uint8_t xmodem_calc_crc(uint8_t *buf)
+{
+	return 0;
+}
+
+uint8_t xmodem_line_parser(uint8_t *buf)
+{
+	if ( buf[0] == X_SOH)
+		xmodem_struct.data_len = XMODEM_LEN;
+	else if ( buf[0] == X_STX)
+		xmodem_struct.data_len = XMODEM1K_LEN;
+	else
+		return 1;
+	if ( (buf[1] + buf[2]) != 0xff)
+		return 1;
 	xmodem_struct.addr = buf[1];
 	xmodem_struct.addri = buf[2];
 	xmodem_struct.cs = buf[131];
-	return 0;
+	memcpy(xmodem_line,&buf[3],xmodem_struct.data_len);
+	if ( buf[0] == X_SOH)
+		return xmodem_calc_csum(buf);
+	else if ( buf[0] == X_STX)
+		return xmodem_calc_crc(buf);
+	else
+		return 1;
 }
