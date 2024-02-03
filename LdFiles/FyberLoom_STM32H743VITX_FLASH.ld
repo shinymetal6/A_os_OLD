@@ -76,6 +76,9 @@ SECTIONS
     _d2ram_end       	= LOADADDR(.d2ramEnd);
 	.d2ramEnd  			0x30048000 : {. = ALIGN(4); KEEP(*(.d2ramEnd))}
 	
+	
+	_fdata_start = LOADADDR(.isr_vector);
+	
   /* The startup code goes first into FLASH */
   .isr_vector :
   {
@@ -191,6 +194,7 @@ SECTIONS
     . = ALIGN(4);
     _eflash_end_start = .;        /* define a global symbol at data end */
   } > FLASH
+  
   /* Uninitialized data section */
   . = ALIGN(4);
   .bss :
