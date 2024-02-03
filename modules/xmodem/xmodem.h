@@ -43,6 +43,9 @@
 #define	RECV_EOT		9
 
 #define	XMODEM_LEN		128
+#define	XMODEM_ADDR		1
+#define	XMODEM_ADDRI	2
+#define	XMODEM_CS		131
 #define	XMODEM1K_LEN	1024
 
 typedef struct

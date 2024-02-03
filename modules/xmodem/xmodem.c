@@ -49,11 +49,12 @@ uint8_t xmodem_line_parser(uint8_t *buf)
 		xmodem_struct.data_len = XMODEM1K_LEN;
 	else
 		return 1;
-	if ( (buf[1] + buf[2]) != 0xff)
+	if ( (buf[XMODEM_ADDR] + buf[XMODEM_ADDRI]) != 0xff)
 		return 1;
-	xmodem_struct.addr = buf[1];
-	xmodem_struct.addri = buf[2];
-	xmodem_struct.cs = buf[131];
+	xmodem_struct.addr = buf[XMODEM_ADDR];
+	xmodem_struct.addri = buf[XMODEM_ADDRI];
+	if ( xmodem_struct.data_len == XMODEM_LEN )
+		xmodem_struct.cs = buf[XMODEM_CS];
 	memcpy(xmodem_line,&buf[3],xmodem_struct.data_len);
 	if ( buf[0] == X_SOH)
 		return xmodem_calc_csum(buf);
